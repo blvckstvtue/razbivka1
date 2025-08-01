@@ -94,6 +94,7 @@ new g_iTable = INVALID_STRING_TABLE;
 new Handle:hTrie_Cookies;
 new bool:g_bDev[MAXPLAYERS+1];
 new iCycle[MAXPLAYERS+1], Float:next_cycle[MAXPLAYERS+1];
+new iOldCycle[MAXPLAYERS+1];
 
 public Plugin:myinfo =
 {
@@ -754,6 +755,8 @@ public OnClientConnected(client)
 	{
 		g_hTrieSounds[client][1] = CreateTrie();
 	}
+	
+	iOldCycle[client] = 0;
 }
 
 public OnClientPutInServer(client)
@@ -761,6 +764,8 @@ public OnClientPutInServer(client)
 	hPlugin[client] = INVALID_HANDLE;
 	weapon_switch[client] = INVALID_FUNCTION;
 	weapon_sequence[client] = INVALID_FUNCTION;
+	
+	iOldCycle[client] = 0;
 	
 	if (IsFakeClient(client))
 	{
@@ -787,6 +792,8 @@ public OnClientPutInServer(client)
 public OnClientPostAdminCheck(client)
 {
 	GetLanguageInfo(GetClientLanguage(client), g_sClLang[client], sizeof(g_sClLang[]));
+	
+	iOldCycle[client] = 0;
 }
 
 public OnClientCookiesCached(client)
@@ -829,6 +836,8 @@ public OnClientCookiesCached(client)
 			SetClientCookie(client, g_hCookieMenuSpawn, g_bMenuSpawn[client] ? "1" : "0");
 		}
 	}
+	
+	iOldCycle[client] = 0;
 }
 
 bool:CanSetCustomModel(client)
@@ -874,6 +883,7 @@ public OnClientDisconnect_Post(client)
 		HasSoundAt[client][i] = false;
 	}
 	StopSounds[client] = false;
+	iOldCycle[client] = 0;
 	
 	for (new i = 0; i < Type_Max; i++)
 	{
@@ -1458,7 +1468,7 @@ public OnPostThinkPost_Old(client)
 						CSViewModel_SetSequence(ClientVM2[client], Sequence);
 					}
 					
-					// Handle weapon sounds
+											// Handle weapon sounds
 					if (HasSoundAt[client][Sequence] || StopSounds[client])
 					{
 						// Emit debug warning sound (can be disabled by removing this)
@@ -1475,14 +1485,13 @@ public OnPostThinkPost_Old(client)
 								PrintToChat(client, "Stopped at cycle %d sequence %d", iCycle[client], OldSequence[client]);
 							}
 							iCycle[client] = 0;
+							iOldCycle[client] = -1;
 							next_cycle[client] = game_time + 0.05;
 						}
-						
-						static iOldCycle[MAXPLAYERS+1];
 						if (iOldCycle[client] != iCycle[client])
 						{
 							iOldCycle[client] = iCycle[client];
-							decl String:sBuf[16];
+							decl String:sBuf[12];
 							FormatEx(sBuf, sizeof(sBuf), "%d_%d", Sequence, iCycle[client]);
 							if (GetTrieString(g_hTrieSounds[client][0], sBuf, local_buffer, sizeof(local_buffer)))
 							{
@@ -1505,7 +1514,7 @@ public OnPostThinkPost_Old(client)
 								}
 							}
 						}
-				}
+					}
 				case 1:
 				{
 					CSViewModel_SetSequence(ClientVM2[client], Sequence);
@@ -1844,6 +1853,7 @@ bool:OnWeaponChanged(client, WeaponIndex, Sequence, bool:really_change = false)
 		
 		iCycle[client] = 0;
 		next_cycle[client] = 0.0;
+		iOldCycle[client] = 0;
 		
 		decl String:ClassName[32];
 		GetEdictClassname(WeaponIndex, ClassName, sizeof(ClassName));
@@ -2142,6 +2152,7 @@ bool:OnWeaponChanged(client, WeaponIndex, Sequence, bool:really_change = false)
 	
 	iCycle[client] = 0;
 	next_cycle[client] = 0.0;
+	iOldCycle[client] = 0;
 	
 	decl String:ClassName[32];
 	GetEdictClassname(WeaponIndex, ClassName, sizeof(ClassName));
@@ -3725,9 +3736,9 @@ stock StringToLower(const String:input[], String:output[], size)
 // Sound hook to block original weapon sounds when custom sounds are active
 public Action:NormalSoundHook(clients[64], &numClients, String:sample[PLATFORM_MAX_PATH], &entity, &channel, &Float:volume, &level, &pitch, &flags)
 {
-	if (0 < entity <= MaxClients && IsCustom[entity] && (channel == SNDCHAN_WEAPON || channel == SNDCHAN_ITEM) && volume > 0)
+	if (0 < entity <= MaxClients && IsCustom[entity] && (channel == 1 || channel == 3) && volume > 0)
 	{
-		// Block the original weapon sound
+		channel = 0;
 		return Plugin_Stop;
 	}
 	return Plugin_Continue;
