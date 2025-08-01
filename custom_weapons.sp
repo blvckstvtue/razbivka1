@@ -755,8 +755,6 @@ public OnClientConnected(client)
 	{
 		g_hTrieSounds[client][1] = CreateTrie();
 	}
-	
-	iOldCycle[client] = 0;
 }
 
 public OnClientPutInServer(client)
@@ -764,8 +762,6 @@ public OnClientPutInServer(client)
 	hPlugin[client] = INVALID_HANDLE;
 	weapon_switch[client] = INVALID_FUNCTION;
 	weapon_sequence[client] = INVALID_FUNCTION;
-	
-	iOldCycle[client] = 0;
 	
 	if (IsFakeClient(client))
 	{
@@ -792,8 +788,6 @@ public OnClientPutInServer(client)
 public OnClientPostAdminCheck(client)
 {
 	GetLanguageInfo(GetClientLanguage(client), g_sClLang[client], sizeof(g_sClLang[]));
-	
-	iOldCycle[client] = 0;
 }
 
 public OnClientCookiesCached(client)
@@ -836,8 +830,6 @@ public OnClientCookiesCached(client)
 			SetClientCookie(client, g_hCookieMenuSpawn, g_bMenuSpawn[client] ? "1" : "0");
 		}
 	}
-	
-	iOldCycle[client] = 0;
 }
 
 bool:CanSetCustomModel(client)
@@ -1741,6 +1733,7 @@ public OnPostThinkPost(client)
 
 public OnWeaponEquipPost(client, weapon)
 {
+	CSWeapon_SetPredictID(weapon, 0);
 	iDroppedModel[weapon] = 0;
 	
 	decl String:szClsname[64];
@@ -1834,6 +1827,11 @@ public OnWeaponEquipPost(client, weapon)
 	else
 	{
 		iDroppedModel[weapon] = index;
+	}
+	
+	if (index != 0)
+	{
+		CSWeapon_SetPredictID(weapon, index);
 	}
 }
 
@@ -2027,7 +2025,7 @@ bool:OnWeaponChanged(client, WeaponIndex, Sequence, bool:really_change = false)
 								{
 									if (KvGetSectionName(hKv, sSequence, sizeof(sSequence)) && sSequence[0])
 									{
-										SetTrieValue(g_hTrieSequence[client], sSequence, KvGetNum(hKv, NULL_STRING));
+										SetTrieValue(g_hTrieSequence[client], sSequence, KvGetNum(hKv, NULL_STRING, 0), true);
 									}
 								}
 								while (KvGotoNextKey(hKv, false));
@@ -2346,9 +2344,9 @@ bool:OnWeaponChanged(client, WeaponIndex, Sequence, bool:really_change = false)
 									SetTrieString(g_hTrieSounds[client][0], mapKey, soundPath, true);
 									
 									// Store sound info
-									new soundInfo[4];
+									decl any:soundInfo[4];
 									soundInfo[0] = KvGetNum(hKv, "individual", 0);
-									soundInfo[1] = _:KvGetFloat(hKv, "volume", 1.0);
+									soundInfo[1] = KvGetFloat(hKv, "volume", 1.0);
 									soundInfo[2] = KvGetNum(hKv, "level", 75);
 									soundInfo[3] = KvGetNum(hKv, "pitch", 100);
 									SetTrieArray(g_hTrieSounds[client][1], mapKey, soundInfo, 4, true);
