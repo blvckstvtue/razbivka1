@@ -746,11 +746,11 @@ public OnClientConnected(client)
 	}
 	
 	// Initialize sound tries for weapon sounds
-	if (g_hTrieSounds[client][0] == INVALID_HANDLE)
+	if (!g_hTrieSounds[client][0])
 	{
 		g_hTrieSounds[client][0] = CreateTrie();
 	}
-	if (g_hTrieSounds[client][1] == INVALID_HANDLE)
+	if (!g_hTrieSounds[client][1])
 	{
 		g_hTrieSounds[client][1] = CreateTrie();
 	}
@@ -1464,8 +1464,8 @@ public OnPostThinkPost_Old(client)
 						// Emit debug warning sound (can be disabled by removing this)
 						if (!IsFakeClient(client))
 						{
-							EmitSoundToClient(client, "resource/warning.wav", client, SNDCHAN_WEAPON, SNDLEVEL_NONE, SND_STOPLOOPING);
-							EmitSoundToClient(client, "resource/warning.wav", client, SNDCHAN_ITEM, SNDLEVEL_NONE, SND_STOPLOOPING);
+							EmitSoundToClient(client, "resource/warning.wav", client, 1, 0, 3, 0.0, 100, -1, NULL_VECTOR, NULL_VECTOR, true, 0.0);
+							EmitSoundToClient(client, "resource/warning.wav", client, 3, 0, 3, 0.0, 100, -1, NULL_VECTOR, NULL_VECTOR, true, 0.0);
 						}
 						
 						if (Cycle < OldCycle[client])
@@ -1497,11 +1497,11 @@ public OnPostThinkPost_Old(client)
 								
 								if (soundInfo[0]) // individual
 								{
-									EmitSoundToClient(client, local_buffer, client, SNDCHAN_AUTO, soundInfo[2], SND_NOFLAGS, Float:soundInfo[1], soundInfo[3]);
+									EmitSoundToClient(client, local_buffer, client, 0, soundInfo[2], 0, Float:soundInfo[1], soundInfo[3], -1, NULL_VECTOR, NULL_VECTOR, true, 0.0);
 								}
 								else
 								{
-									EmitAmbientSound(local_buffer, NULL_VECTOR, client, soundInfo[2], SND_NOFLAGS, Float:soundInfo[1], soundInfo[3]);
+									EmitAmbientSound(local_buffer, NULL_VECTOR, client, soundInfo[2], 0, Float:soundInfo[1], soundInfo[3], 0.0);
 								}
 							}
 						}
@@ -1629,8 +1629,8 @@ public OnPostThinkPost(client)
 					// Emit debug warning sound (can be disabled by removing this)
 					if (!IsFakeClient(client))
 					{
-						EmitSoundToClient(client, "resource/warning.wav", client, SNDCHAN_WEAPON, SNDLEVEL_NONE, SND_STOPLOOPING);
-						EmitSoundToClient(client, "resource/warning.wav", client, SNDCHAN_ITEM, SNDLEVEL_NONE, SND_STOPLOOPING);
+						EmitSoundToClient(client, "resource/warning.wav", client, 1, 0, 3, 0.0, 100, -1, NULL_VECTOR, NULL_VECTOR, true, 0.0);
+						EmitSoundToClient(client, "resource/warning.wav", client, 3, 0, 3, 0.0, 100, -1, NULL_VECTOR, NULL_VECTOR, true, 0.0);
 					}
 					
 					if (Cycle < OldCycle[client])
@@ -1662,11 +1662,11 @@ public OnPostThinkPost(client)
 							
 							if (soundInfo[0]) // individual
 							{
-								EmitSoundToClient(client, local_buffer, client, SNDCHAN_AUTO, soundInfo[2], SND_NOFLAGS, Float:soundInfo[1], soundInfo[3]);
+								EmitSoundToClient(client, local_buffer, client, 0, soundInfo[2], 0, Float:soundInfo[1], soundInfo[3], -1, NULL_VECTOR, NULL_VECTOR, true, 0.0);
 							}
 							else
 							{
-								EmitAmbientSound(local_buffer, NULL_VECTOR, client, soundInfo[2], SND_NOFLAGS, Float:soundInfo[1], soundInfo[3]);
+								EmitAmbientSound(local_buffer, NULL_VECTOR, client, soundInfo[2], 0, Float:soundInfo[1], soundInfo[3], 0.0);
 							}
 						}
 					}
@@ -2036,15 +2036,15 @@ bool:OnWeaponChanged(client, WeaponIndex, Sequence, bool:really_change = false)
 										new cycle = KvGetNum(hKv, "cycle", 0);
 										
 										FormatEx(mapKey, sizeof(mapKey), "%d_%d", sequence, cycle);
-										SetTrieString(g_hTrieSounds[client][0], mapKey, soundPath);
-										
-										// Store sound info
-										new soundInfo[4];
-										soundInfo[0] = KvGetNum(hKv, "individual", 0);
-										soundInfo[1] = _:KvGetFloat(hKv, "volume", 1.0);
-										soundInfo[2] = KvGetNum(hKv, "level", 75);
-										soundInfo[3] = KvGetNum(hKv, "pitch", 100);
-										SetTrieArray(g_hTrieSounds[client][1], mapKey, soundInfo, 4);
+																		SetTrieString(g_hTrieSounds[client][0], mapKey, soundPath, true);
+								
+								// Store sound info
+								new soundInfo[4];
+								soundInfo[0] = KvGetNum(hKv, "individual", 0);
+								soundInfo[1] = _:KvGetFloat(hKv, "volume", 1.0);
+								soundInfo[2] = KvGetNum(hKv, "level", 75);
+								soundInfo[3] = KvGetNum(hKv, "pitch", 100);
+								SetTrieArray(g_hTrieSounds[client][1], mapKey, soundInfo, 4, true);
 										
 										HasSoundAt[client][sequence] = true;
 									}
@@ -2324,7 +2324,7 @@ bool:OnWeaponChanged(client, WeaponIndex, Sequence, bool:really_change = false)
 									new cycle = KvGetNum(hKv, "cycle", 0);
 									
 									FormatEx(mapKey, sizeof(mapKey), "%d_%d", sequence, cycle);
-									SetTrieString(g_hTrieSounds[client][0], mapKey, soundPath);
+									SetTrieString(g_hTrieSounds[client][0], mapKey, soundPath, true);
 									
 									// Store sound info
 									new soundInfo[4];
@@ -2332,7 +2332,7 @@ bool:OnWeaponChanged(client, WeaponIndex, Sequence, bool:really_change = false)
 									soundInfo[1] = _:KvGetFloat(hKv, "volume", 1.0);
 									soundInfo[2] = KvGetNum(hKv, "level", 75);
 									soundInfo[3] = KvGetNum(hKv, "pitch", 100);
-									SetTrieArray(g_hTrieSounds[client][1], mapKey, soundInfo, 4);
+									SetTrieArray(g_hTrieSounds[client][1], mapKey, soundInfo, 4, true);
 									
 									HasSoundAt[client][sequence] = true;
 								}
