@@ -2032,7 +2032,7 @@ bool:OnWeaponChanged(client, WeaponIndex, Sequence, bool:really_change = false)
 									KvGetSectionName(hKv, soundPath, sizeof(soundPath));
 									if (soundPath[0] && IsSoundFile(soundPath))
 									{
-										new sequence = KvGetNum(hKv, "sequence", 1);
+										new sequence = KvGetNum(hKv, "sequence", 0);
 										new cycle = KvGetNum(hKv, "cycle", 0);
 										
 										FormatEx(mapKey, sizeof(mapKey), "%d_%d", sequence, cycle);
@@ -2320,7 +2320,7 @@ bool:OnWeaponChanged(client, WeaponIndex, Sequence, bool:really_change = false)
 								KvGetSectionName(hKv, soundPath, sizeof(soundPath));
 								if (soundPath[0] && IsSoundFile(soundPath))
 								{
-									new sequence = KvGetNum(hKv, "sequence", 1);
+									new sequence = KvGetNum(hKv, "sequence", 0);
 									new cycle = KvGetNum(hKv, "cycle", 0);
 									
 									FormatEx(mapKey, sizeof(mapKey), "%d_%d", sequence, cycle);
