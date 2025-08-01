@@ -1620,118 +1620,98 @@ public OnPostThinkPost(client)
 	else
 	if (IsCustom[client])
 	{
-		switch (Function_OnWeaponThink(hPlugin[client], weapon_sequence[client], client, WeaponIndex, ClientVM[client], OldSequence[client], Sequence))
+		static iOldCycle[MAXPLAYERS+1];
+		if (g_bDev[client])
 		{
-			case 0:
+			PrintHintText(client, "Sequence: %d\nCycle: %d", Sequence, iCycle[client]);
+		}
+		if (IsValidEdict(ClientVM2[client]))
+		{
+			CSViewModel_SetPlaybackRate(ClientVM2[client], CSViewModel_GetPlaybackRate(ClientVM[client]));
+			switch (Function_OnWeaponThink(hPlugin[client], weapon_sequence[client], client, WeaponIndex, ClientVM[client], ClientVM2[client], OldSequence[client], Sequence))
 			{
-				static String:local_buffer[PLATFORM_MAX_PATH];
-				IntToString(Sequence, local_buffer, sizeof(local_buffer));
-				if (OldSequence[client] != Sequence && GetTrieValue(g_hTrieSequence[client], local_buffer, Sequence))	// Sequence mapper
+				case 0:
 				{
-					CSViewModel_SetSequence(ClientVM[client], Sequence);
-					if (g_bDev[client])
+					static String:local_buffer[PLATFORM_MAX_PATH];
+					IntToString(Sequence, local_buffer, sizeof(local_buffer));
+					GetTrieValue(g_hTrieSequence[client], local_buffer, Sequence);
+					if (HasSoundAt[client][Sequence] || StopSounds[client])
 					{
-						PrintToChat(client, "\x04Sequence mapped (%s -> %d)", local_buffer, Sequence);
-					}
-				}
-				
-				// Handle weapon sounds
-				if (HasSoundAt[client][Sequence] || StopSounds[client])
-				{
-					// Emit debug warning sound (can be disabled by removing this)
-					if (!IsFakeClient(client))
-					{
-						EmitSoundToClient(client, "resource/warning.wav", client, 1, 0, 3, 0.0, 100, -1, NULL_VECTOR, NULL_VECTOR, true, 0.0);
-						EmitSoundToClient(client, "resource/warning.wav", client, 3, 0, 3, 0.0, 100, -1, NULL_VECTOR, NULL_VECTOR, true, 0.0);
-					}
-					
-					if (Cycle < OldCycle[client])
-					{
-						if (g_bDev[client])
+						if (!IsFakeClient(client))
 						{
-							PrintToChat(client, "Stopped at cycle %d sequence %d", iCycle[client], OldSequence[client]);
+							EmitSoundToClient(client, "resource/warning.wav", client, 1, 0, 3, 0.0, 100, -1, NULL_VECTOR, NULL_VECTOR, true, 0.0);
+							EmitSoundToClient(client, "resource/warning.wav", client, 3, 0, 3, 0.0, 100, -1, NULL_VECTOR, NULL_VECTOR, true, 0.0);
 						}
-						iCycle[client] = 0;
-						next_cycle[client] = game_time + 0.05;
-					}
-					
-					static iOldCycle2[MAXPLAYERS+1];
-					if (iOldCycle2[client] != iCycle[client])
-					{
-						iOldCycle2[client] = iCycle[client];
-						decl String:sBuf[16];
-						FormatEx(sBuf, sizeof(sBuf), "%d_%d", Sequence, iCycle[client]);
-						if (GetTrieString(g_hTrieSounds[client][0], sBuf, local_buffer, sizeof(local_buffer)))
+						if (Cycle < OldCycle[client])
 						{
-							decl soundInfo[4];
-							GetTrieArray(g_hTrieSounds[client][1], sBuf, soundInfo, 4);
-							
 							if (g_bDev[client])
 							{
-								PrintToChat(client, "Sound: %s, Individual: %d, Volume: %.2f, Level: %d, Pitch: %d, Sequence: %d, Cycle: %d", 
-									local_buffer, soundInfo[0], Float:soundInfo[1], soundInfo[2], soundInfo[3], Sequence, iCycle[client]);
+								PrintToChat(client, "Stopped at cycle %d sequence %d", iCycle[client], OldSequence[client]);
 							}
-							
-							if (soundInfo[0]) // individual
+							iCycle[client] = 0;
+							iOldCycle[client] = -1;
+							next_cycle[client] = game_time + 0.05;
+						}
+						if (iOldCycle[client] != iCycle[client])
+						{
+							iOldCycle[client] = iCycle[client];
+							decl String:sBuf[12];
+							FormatEx(sBuf, 11, "%d_%d", Sequence, iCycle[client]);
+							if (GetTrieString(g_hTrieSounds[client][0], sBuf, local_buffer, sizeof(local_buffer)))
 							{
-								EmitSoundToClient(client, local_buffer, client, 0, soundInfo[2], 0, Float:soundInfo[1], soundInfo[3], -1, NULL_VECTOR, NULL_VECTOR, true, 0.0);
-							}
-							else
-							{
-								EmitAmbientSound(local_buffer, NULL_VECTOR, client, soundInfo[2], 0, Float:soundInfo[1], soundInfo[3], 0.0);
+								decl soundInfo[4];
+								GetTrieArray(g_hTrieSounds[client][1], sBuf, soundInfo, 4);
+								if (g_bDev[client])
+								{
+									PrintToChat(client, "Sound: %s, Individual: %d, Volume: %.2f, Level: %d, Pitch: %d, Sequence: %d, Cycle: %d", local_buffer, soundInfo[0], Float:soundInfo[1], soundInfo[2], soundInfo[3], Sequence, iCycle[client]);
+								}
+								if (soundInfo[0])
+								{
+									EmitSoundToClient(client, local_buffer, client, 0, soundInfo[2], 0, Float:soundInfo[1], soundInfo[3], -1, NULL_VECTOR, NULL_VECTOR, true, 0.0);
+								}
+								else
+								{
+									EmitAmbientSound(local_buffer, NULL_VECTOR, client, soundInfo[2], 0, Float:soundInfo[1], soundInfo[3], 0.0);
+								}
 							}
 						}
 					}
-			}
-			case 1:
-			{
-				CSViewModel_SetSequence(ClientVM[client], Sequence);
-			}
-			default:
-			{
+					if (Cycle < OldCycle[client] && OldSequence[client] == Sequence)
+					{
+						CSViewModel_SetSequence(ClientVM2[client], 0);
+						NextSeq[client] = game_time + 0.02;
+					}
+					else
+					{
+						if (NextSeq[client] < game_time)
+						{
+							CSViewModel_SetSequence(ClientVM2[client], Sequence);
+						}
+					}
+				}
+				case 1:
+				{
+					CSViewModel_SetSequence(ClientVM2[client], Sequence);
+				}
+				default:
+				{
+				}
 			}
 		}
-	}
-	
-	if (iPrevSeq[client] != 0 && NextSeq[client] < game_time)
-	{
-		//CSViewModel_RemoveEffects(ClientVM[client], EF_NODRAW);
-		CSViewModel_SetSequence(ClientVM[client], iPrevSeq[client]);
-		iPrevSeq[client] = 0;
-	}
-	
-	if (g_bDev[client])
-	{
-		PrintHintText(client, "Sequence: %d\nCycle: %d", Sequence, iCycle[client]);
-		if (GetClientButtons(client) & IN_USE)
+		if (next_cycle[client] < game_time)
 		{
-			PrintToChat(client, "\x03Sequence %d | Cycle %d", Sequence, iCycle[client]);
+			iCycle[client]++;
+			next_cycle[client] = game_time + 0.05;
 		}
 	}
-	
-	if (Cycle < OldCycle[client])
+	if (SpawnCheck[client])
 	{
-		//iCycle[client] = 0;
-		//iOldCycle[client] = -1;
-		//next_cycle[client] = game_time + 0.05;
-	
-		if (IsCustom[client] && Sequence == OldSequence[client])
+		SpawnCheck[client] = false;
+		if (IsCustom[client])
 		{
-			//CSViewModel_AddEffects(ClientVM[client], EF_NODRAW);
-			CSViewModel_SetSequence(ClientVM[client], 0);
-			iPrevSeq[client] = Sequence;
-			
-			NextSeq[client] = game_time + 0.03;
+			CSViewModel_AddEffects(ClientVM[client], EF_NODRAW);
 		}
 	}
-	
-	if (next_cycle[client] < game_time)
-	{
-		iCycle[client]++;
-		
-		next_cycle[client] = game_time + 0.05;
-	}
-	
 	OldWeapon[client] = WeaponIndex;
 	OldSequence[client] = Sequence;
 	OldCycle[client] = Cycle;
