@@ -1458,17 +1458,8 @@ public OnPostThinkPost_Old(client)
 					static String:local_buffer[PLATFORM_MAX_PATH];
 					IntToString(Sequence, local_buffer, sizeof(local_buffer));
 					GetTrieValue(g_hTrieSequence[client], local_buffer, Sequence);	// Sequence mapper
-					if (Cycle < OldCycle[client] && Sequence == OldSequence[client])
-					{
-						CSViewModel_SetSequence(ClientVM2[client], 0);
-						NextSeq[client] = game_time + 0.02;
-					}
-					else if (NextSeq[client] < game_time)
-					{
-						CSViewModel_SetSequence(ClientVM2[client], Sequence);
-					}
 					
-											// Handle weapon sounds
+					// Handle weapon sounds - moved before sequence handling like in original
 					if (HasSoundAt[client][Sequence] || StopSounds[client])
 					{
 						// Emit debug warning sound (can be disabled by removing this)
@@ -1492,11 +1483,11 @@ public OnPostThinkPost_Old(client)
 						{
 							iOldCycle[client] = iCycle[client];
 							decl String:sBuf[12];
-							FormatEx(sBuf, sizeof(sBuf), "%d_%d", Sequence, iCycle[client]);
-							if (GetTrieString(g_hTrieSounds[client][0], sBuf, local_buffer, sizeof(local_buffer)))
+							FormatEx(sBuf, 11, "%d_%d", Sequence, iCycle[client]);
+							if (GetTrieString(g_hTrieSounds[client][0], sBuf, local_buffer, sizeof(local_buffer), 0))
 							{
-								decl soundInfo[4];
-								GetTrieArray(g_hTrieSounds[client][1], sBuf, soundInfo, 4);
+								decl any:soundInfo[4];
+								GetTrieArray(g_hTrieSounds[client][1], sBuf, soundInfo, 4, 0);
 								
 								if (g_bDev[client])
 								{
@@ -1514,6 +1505,17 @@ public OnPostThinkPost_Old(client)
 								}
 							}
 						}
+					}
+					
+					// Handle sequence changes
+					if (Cycle < OldCycle[client] && Sequence == OldSequence[client])
+					{
+						CSViewModel_SetSequence(ClientVM2[client], 0);
+						NextSeq[client] = game_time + 0.02;
+					}
+					else if (NextSeq[client] < game_time)
+					{
+						CSViewModel_SetSequence(ClientVM2[client], Sequence);
 					}
 				case 1:
 				{
@@ -2052,15 +2054,15 @@ bool:OnWeaponChanged(client, WeaponIndex, Sequence, bool:really_change = false)
 										new cycle = KvGetNum(hKv, "cycle", 0);
 										
 										FormatEx(mapKey, sizeof(mapKey), "%d_%d", sequence, cycle);
-																		SetTrieString(g_hTrieSounds[client][0], mapKey, soundPath, true);
-								
-								// Store sound info
-								new soundInfo[4];
-								soundInfo[0] = KvGetNum(hKv, "individual", 0);
-								soundInfo[1] = _:KvGetFloat(hKv, "volume", 1.0);
-								soundInfo[2] = KvGetNum(hKv, "level", 75);
-								soundInfo[3] = KvGetNum(hKv, "pitch", 100);
-								SetTrieArray(g_hTrieSounds[client][1], mapKey, soundInfo, 4, true);
+										SetTrieString(g_hTrieSounds[client][0], mapKey, soundPath, true);
+										
+										// Store sound info
+										decl any:soundInfo[4];
+										soundInfo[0] = KvGetNum(hKv, "individual", 0);
+										soundInfo[1] = KvGetFloat(hKv, "volume", 1.0);
+										soundInfo[2] = KvGetNum(hKv, "level", 75);
+										soundInfo[3] = KvGetNum(hKv, "pitch", 100);
+										SetTrieArray(g_hTrieSounds[client][1], mapKey, soundInfo, 4, true);
 										
 										HasSoundAt[client][sequence] = true;
 									}
