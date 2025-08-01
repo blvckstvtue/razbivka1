@@ -1443,7 +1443,7 @@ public OnPostThinkPost_Old(client)
 			
 			switch (Function_OnWeaponThink(hPlugin[client], weapon_sequence[client], client, WeaponIndex, ClientVM2[client], OldSequence[client], Sequence))
 			{
-				case Plugin_Continue :
+				case 0:
 				{
 					static String:local_buffer[PLATFORM_MAX_PATH];
 					IntToString(Sequence, local_buffer, sizeof(local_buffer));
@@ -1506,9 +1506,12 @@ public OnPostThinkPost_Old(client)
 							}
 						}
 				}
-				case Plugin_Changed :
+				case 1:
 				{
 					CSViewModel_SetSequence(ClientVM2[client], Sequence);
+				}
+				default:
+				{
 				}
 			}
 		}
@@ -1610,7 +1613,7 @@ public OnPostThinkPost(client)
 	{
 		switch (Function_OnWeaponThink(hPlugin[client], weapon_sequence[client], client, WeaponIndex, ClientVM[client], OldSequence[client], Sequence))
 		{
-			case Plugin_Continue :
+			case 0:
 			{
 				static String:local_buffer[PLATFORM_MAX_PATH];
 				IntToString(Sequence, local_buffer, sizeof(local_buffer));
@@ -1671,9 +1674,12 @@ public OnPostThinkPost(client)
 						}
 					}
 			}
-			case Plugin_Changed :
+			case 1:
 			{
 				CSViewModel_SetSequence(ClientVM[client], Sequence);
+			}
+			default:
+			{
 			}
 		}
 	}
